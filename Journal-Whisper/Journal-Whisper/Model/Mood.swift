@@ -9,7 +9,7 @@
 
 import Foundation
 
-enum Mood: String, CaseIterable, Codable, Identifiable {
+nonisolated enum Mood: String, CaseIterable, Codable, Identifiable {
     case joyful, content, calm, neutral, anxious, sad, frustrated, overwhelmed
 
     var id: String { rawValue }
@@ -46,7 +46,7 @@ enum Mood: String, CaseIterable, Codable, Identifiable {
 }
 
 /// Who set an entry's mood. A mood the user picked is never replaced by a suggestion.
-enum MoodSource: String, Codable {
+nonisolated enum MoodSource: String, Codable {
     /// Suggested by the on-device language model.
     case ai
     /// Suggested by the offline keyword fallback.
