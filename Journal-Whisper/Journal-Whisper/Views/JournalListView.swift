@@ -148,9 +148,15 @@ private struct EntryRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(entry.displayTitle)
-                .font(.headline)
-                .lineLimit(1)
+            HStack(spacing: 6) {
+                if let mood = entry.mood {
+                    Text(mood.emoji)
+                        .accessibilityLabel(String(localized: "Mood: \(mood.label)"))
+                }
+                Text(entry.displayTitle)
+                    .font(.headline)
+                    .lineLimit(1)
+            }
             Text(entry.createdAt, format: .dateTime.weekday(.wide).day().month().year())
                 .font(.caption)
                 .foregroundStyle(.secondary)

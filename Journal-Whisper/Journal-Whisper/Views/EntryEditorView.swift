@@ -15,6 +15,7 @@ struct EntryEditorView: View {
 
     @FocusState private var focusedField: Field?
     private enum Field { case title, text }
+    @State private var isPickingMood = false
 
     var body: some View {
         ScrollView {
@@ -22,6 +23,11 @@ struct EntryEditorView: View {
                 Text(entry.createdAt, format: .dateTime.weekday(.wide).day().month(.wide).hour().minute())
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+
+                MoodChip(mood: entry.mood, source: entry.moodSource) {
+                    focusedField = nil
+                    isPickingMood = true
+                }
 
                 TextField("Title", text: $entry.title, axis: .vertical)
                     .font(.title.bold())
@@ -38,6 +44,9 @@ struct EntryEditorView: View {
             .padding()
         }
         .scrollDismissesKeyboard(.interactively)
+        .sheet(isPresented: $isPickingMood) {
+            MoodPickerSheet(entry: entry)
+        }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if focusedField != nil {

@@ -15,6 +15,16 @@ final class JournalEntry {
     /// Set when the entry is moved to Recently Deleted; nil while it's in the journal.
     var deletedAt: Date?
 
+    // Mood fields are stored as primitives (not enums or a Codable struct) so
+    // they work in #Predicate / @Query for the Week 3 charts. All optional, so
+    // existing stores migrate automatically.
+    /// Raw value of `Mood`; use `mood` instead.
+    var moodRaw: String?
+    /// How strongly the mood was felt, within `Mood.intensityRange`.
+    var moodIntensity: Int?
+    /// Raw value of `MoodSource`; use `moodSource` instead.
+    var moodSourceRaw: String?
+
     /// How long entries stay in Recently Deleted before being purged.
     static let retentionDays = 30
 
@@ -65,6 +75,40 @@ final class JournalEntry {
         guard let expired = try? context.fetch(descriptor), !expired.isEmpty else { return }
         expired.forEach(context.delete)
         try? context.save()
+    }
+
+    // MARK: - Mood
+
+    var mood: Mood? { moodRaw.flatMap(Mood.init(rawValue:)) }
+    var moodSource: MoodSource? { moodSourceRaw.flatMap(MoodSource.init(rawValue:)) }
+
+    /// Sets the mood the user picked. This always wins over suggestions.
+    func setUserMood(_ mood: Mood, intensity: Int = Mood.defaultIntensity) {
+        moodRaw = mood.rawValue
+        moodIntensity = Self.clampedIntensity(intensity)
+        moodSourceRaw = MoodSource.user.rawValue
+    }
+
+    /// Applies a mood suggested by the model or the fallback. Does nothing if the
+    /// user already chose a mood. Returns true if the suggestion was applied.
+    @discardableResult
+    func applySuggestedMood(_ mood: Mood, intensity: Int, source: MoodSource) -> Bool {
+        guard source != .user, moodSource != .user else { return false }
+        moodRaw = mood.rawValue
+        moodIntensity = Self.clampedIntensity(intensity)
+        moodSourceRaw = source.rawValue
+        return true
+    }
+
+    /// Removes the mood. After the user clears it, suggestions may tag the entry again.
+    func clearMood() {
+        moodRaw = nil
+        moodIntensity = nil
+        moodSourceRaw = nil
+    }
+
+    private static func clampedIntensity(_ value: Int) -> Int {
+        min(max(value, Mood.intensityRange.lowerBound), Mood.intensityRange.upperBound)
     }
 
     /// A short preview of the text for list rows.
