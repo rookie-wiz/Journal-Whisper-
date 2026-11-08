@@ -146,6 +146,8 @@ nonisolated struct SafeguardedEngine: ReflectionEngine {
         return try await base.analyzeMood(text)
     }
 
+    func prewarm() { base.prewarm() }
+
     func prompts(for text: String, mood: Mood?) async throws -> [String] {
         guard SafetyGate.assess(text) == .clear else { throw ReflectionError.needsSupport }
         let raw = try await base.prompts(for: text, mood: mood)

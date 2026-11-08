@@ -24,6 +24,9 @@ final class JournalEntry {
     var moodIntensity: Int?
     /// Raw value of `MoodSource`; use `moodSource` instead.
     var moodSourceRaw: String?
+    /// When a mood suggestion last ran. Compared with `updatedAt` to skip
+    /// re-analysing text that hasn't changed.
+    var moodAnalyzedAt: Date?
 
     /// How long entries stay in Recently Deleted before being purged.
     static let retentionDays = 30
@@ -105,6 +108,24 @@ final class JournalEntry {
         moodRaw = nil
         moodIntensity = nil
         moodSourceRaw = nil
+    }
+
+    /// True if the text changed since the last mood suggestion ran (or it never ran).
+    var needsMoodAnalysis: Bool {
+        guard let moodAnalyzedAt else { return true }
+        return moodAnalyzedAt < updatedAt
+    }
+
+    /// Title and text together: what mood tagging, prompts and safety checks read.
+    var reflectionText: String {
+        [title, text]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n\n")
+    }
+
+    var wordCount: Int {
+        reflectionText.split(whereSeparator: { $0.isWhitespace || $0.isNewline }).count
     }
 
     private static func clampedIntensity(_ value: Int) -> Int {
