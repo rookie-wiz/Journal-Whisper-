@@ -27,6 +27,12 @@ nonisolated protocol ReflectionEngine: Sendable {
     func prompts(for text: String, mood: Mood?) async throws -> [String]
 }
 
+nonisolated enum ReflectionError: Error, Equatable {
+    /// The entry suggests the writer may be in crisis. Don't generate anything;
+    /// show supportive resources instead.
+    case needsSupport
+}
+
 nonisolated enum ReflectionDefaults {
     /// How many prompts to show at once.
     static let promptCount = 3
