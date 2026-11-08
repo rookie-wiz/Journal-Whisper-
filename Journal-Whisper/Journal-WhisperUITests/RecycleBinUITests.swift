@@ -17,7 +17,7 @@ final class RecycleBinUITests: XCTestCase {
 
     private func launch(active: Int, deleted: Int) {
         app = XCUIApplication()
-        app.launchArguments = ["-uiTesting", "-logToFile",
+        app.launchArguments = ["-uiTesting", "-mockAI", "-logToFile",
                                "-seedActive", "\(active)", "-seedDeleted", "\(deleted)"]
         app.launch()
         // Simulator has no passcode, so the app unlocks itself.

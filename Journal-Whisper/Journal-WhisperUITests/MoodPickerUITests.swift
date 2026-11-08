@@ -13,7 +13,7 @@ final class MoodPickerUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
-        app.launchArguments = ["-uiTesting", "-seedActive", "1", "-seedDeleted", "0"]
+        app.launchArguments = ["-uiTesting", "-mockAI", "-seedActive", "1", "-seedDeleted", "0"]
         app.launch()
         XCTAssertTrue(app.navigationBars["Journal"].waitForExistence(timeout: 10))
     }

@@ -382,3 +382,30 @@ struct PrewarmTests {
         #expect(spy.count.withLock { $0 } == 1)
     }
 }
+
+struct LaunchEngineTests {
+
+    @Test func mockAIUsesMockPrompts() async throws {
+        let engine = ReflectionEngineFactory.makeForLaunch(arguments: ["-uiTesting", "-mockAI"])
+        #expect(try await engine.prompts(for: "A day.", mood: nil) == MockReflectionEngine.prompts)
+        #expect(try await engine.analyzeMood("A day.") == MockReflectionEngine.mood)
+    }
+
+    @Test func mockFailureFallsBackToOffline() async throws {
+        let engine = ReflectionEngineFactory.makeForLaunch(arguments: ["-uiTesting", "-mockAIFailure"])
+        let prompts = try await engine.prompts(for: "A day.", mood: nil)
+        #expect(prompts.count == ReflectionDefaults.promptCount)
+        #expect(Set(prompts).isDisjoint(with: MockReflectionEngine.prompts))
+    }
+
+    @Test func mockStillGoesThroughSafety() async {
+        let engine = ReflectionEngineFactory.makeForLaunch(arguments: ["-mockAI"])
+        await #expect(throws: ReflectionError.needsSupport) { try await engine.prompts(for: "I want to die", mood: nil) }
+    }
+
+    @Test func noFlagsUsesRealStack() {
+        let engine = ReflectionEngineFactory.makeForLaunch(arguments: [])
+        #expect(engine is SafeguardedEngine)
+        #expect((engine as? SafeguardedEngine)?.base is FallbackEngine)
+    }
+}

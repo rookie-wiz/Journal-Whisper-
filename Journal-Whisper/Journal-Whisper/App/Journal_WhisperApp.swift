@@ -12,6 +12,15 @@ import SwiftData
 struct Journal_WhisperApp: App {
     @State private var appLock = AppLock()
 
+    /// Built once per launch; views read it from the environment.
+    private let reflectionEngine: any ReflectionEngine = {
+        #if DEBUG
+        ReflectionEngineFactory.makeForLaunch()
+        #else
+        ReflectionEngineFactory.makeDefault()
+        #endif
+    }()
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             JournalEntry.self,
@@ -44,6 +53,7 @@ struct Journal_WhisperApp: App {
         WindowGroup {
             ContentView()
                 .environment(appLock)
+                .environment(\.reflectionEngine, reflectionEngine)
         }
         .modelContainer(sharedModelContainer)
     }
