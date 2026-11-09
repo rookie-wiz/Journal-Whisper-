@@ -56,6 +56,7 @@ final class ReflectionUITests: XCTestCase {
         XCTAssertTrue(app.buttons["reflectionPrompt"].firstMatch.waitForExistence(timeout: 5))
         XCTAssertEqual(promptButtons.map(\.label), mockPrompts)
 
+        XCTAssertFalse(app.staticTexts["promptNote"].exists, "Personalised prompts need no note")
         app.buttons[mockPrompts[0]].tap()
         XCTAssertFalse(app.buttons["reflectionPrompt"].exists, "Prompts should close after choosing one")
         XCTAssertTrue((text.value as? String ?? "").contains(mockPrompts[0]))
@@ -144,5 +145,14 @@ final class ReflectionUITests: XCTestCase {
         let labels = promptButtons.map(\.label)
         XCTAssertEqual(labels.count, 3)
         XCTAssertTrue(Set(labels).isDisjoint(with: mockPrompts), "Expected prompt-bank prompts, got \(labels)")
+        // A calm note explains the general prompts; no error wording.
+        let note = app.staticTexts["promptNote"]
+        XCTAssertTrue(note.exists)
+        XCTAssertTrue(note.label.contains("aren't available for this entry"), note.label)
+
+        // Refreshing keeps general prompts and the note (the model isn't asked again).
+        app.buttons["New Prompts"].tap()
+        XCTAssertTrue(app.buttons["reflectionPrompt"].firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["promptNote"].exists)
     }
 }

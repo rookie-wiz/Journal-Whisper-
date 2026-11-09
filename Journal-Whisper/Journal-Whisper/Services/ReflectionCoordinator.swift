@@ -22,7 +22,7 @@ final class ReflectionCoordinator {
     enum PromptState: Equatable {
         case hidden
         case loading
-        case ready([String])
+        case ready(PromptSet)
         /// Crisis wording detected: show supportive resources instead of prompts.
         case support
     }
@@ -31,12 +31,23 @@ final class ReflectionCoordinator {
     private(set) var isAnalyzingMood = false
 
     private let engine: any ReflectionEngine
+    /// Used directly when the model has already declined this exact text.
+    private let offlineEngine: any ReflectionEngine
     private let debounce: Duration
     private var moodTask: Task<Void, Never>?
     private var promptTask: Task<Void, Never>?
 
-    init(engine: any ReflectionEngine, debounce: Duration = .seconds(3)) {
+    /// The text the model last declined in a way that would repeat (guardrail,
+    /// refusal, too long, unsupported language), and why. Kept in memory only.
+    private var declined: (text: String, reason: GenerationFailure)?
+
+    init(
+        engine: any ReflectionEngine,
+        offlineEngine: any ReflectionEngine = ReflectionEngineFactory.makeOffline(),
+        debounce: Duration = .seconds(3)
+    ) {
         self.engine = engine
+        self.offlineEngine = offlineEngine
         self.debounce = debounce
     }
 
@@ -98,11 +109,19 @@ final class ReflectionCoordinator {
         promptTask?.cancel()
         promptState = .loading
         let text = entry.reflectionText, mood = entry.mood
+        // Asking the model again would fail the same way: go straight to the
+        // offline prompts, keeping the original reason for the note.
+        let knownDecline = declined.flatMap { $0.text == text ? $0.reason : nil }
+        let engine = knownDecline == nil ? engine : offlineEngine
         promptTask = Task { [weak self, engine] in
             do {
-                let prompts = try await engine.prompts(for: text, mood: mood)
-                guard !Task.isCancelled else { return }
-                self?.promptState = .ready(prompts)
+                var result = try await engine.prompts(for: text, mood: mood)
+                guard !Task.isCancelled, let self else { return }
+                if let knownDecline { result.fallbackReason = knownDecline }
+                if let reason = result.fallbackReason, reason.isDeterministic {
+                    self.declined = (text, reason)
+                }
+                self.promptState = .ready(result)
             } catch ReflectionError.needsSupport {
                 self?.promptState = .support
             } catch is CancellationError {
@@ -110,7 +129,7 @@ final class ReflectionCoordinator {
             } catch {
                 // Last resort if the engine stack itself failed.
                 guard !Task.isCancelled else { return }
-                self?.promptState = .ready(PromptBank.pick(for: mood))
+                self?.promptState = .ready(PromptSet(prompts: PromptBank.pick(for: mood), source: .offline, fallbackReason: .other))
             }
         }
     }

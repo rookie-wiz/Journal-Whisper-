@@ -28,9 +28,9 @@ nonisolated struct MockReflectionEngine: ReflectionEngine {
         return Self.mood
     }
 
-    func prompts(for text: String, mood: Mood?) async throws -> [String] {
+    func prompts(for text: String, mood: Mood?) async throws -> PromptSet {
         if fails { throw ReflectionError.generationFailed(.guardrail) }
-        return Self.prompts
+        return PromptSet(prompts: Self.prompts, source: .ai)
     }
 }
 

@@ -158,7 +158,7 @@ struct ReflectionCoordinatorPromptTests {
         coordinator.requestPrompts(for: entry)
         #expect(coordinator.promptState == .loading)
         await waitUntil { coordinator.promptState != .loading }
-        #expect(coordinator.promptState == .ready(prompts))
+        #expect(coordinator.promptState == .ready(PromptSet(prompts: prompts, source: .ai)))
         _ = _container
     }
 
@@ -167,11 +167,12 @@ struct ReflectionCoordinatorPromptTests {
         let coordinator = ReflectionCoordinator(engine: StubEngine(error: ReflectionError.generationFailed(.guardrail)))
         coordinator.requestPrompts(for: entry)
         await waitUntil { coordinator.promptState != .loading }
-        guard case .ready(let prompts) = coordinator.promptState else {
+        guard case .ready(let set) = coordinator.promptState else {
             Issue.record("Expected prompts, got \(coordinator.promptState)")
             return
         }
-        #expect(prompts.count == ReflectionDefaults.promptCount)
+        #expect(set.prompts.count == ReflectionDefaults.promptCount)
+        #expect(set.source == .offline)
         _ = _container
     }
 
@@ -259,8 +260,12 @@ struct FallbackEngineTests {
             primary: StubEngine(error: ReflectionError.generationFailed(failure)),
             fallback: StubEngine(mood: heuristic, prompts: ["What do you need?"])
         )
-        #expect(try await engine.analyzeMood("x") == heuristic)
-        #expect(try await engine.prompts(for: "x", mood: nil) == ["What do you need?"])
+        let mood = try await engine.analyzeMood("x")
+        #expect(mood?.mood == .sad)
+        #expect(mood?.fallbackReason == failure)
+        let prompts = try await engine.prompts(for: "x", mood: nil)
+        #expect(prompts.prompts == ["What do you need?"])
+        #expect(prompts.fallbackReason == failure)
     }
 
     @Test func passesSupportAndCancellationThrough() async {
@@ -275,7 +280,7 @@ struct FallbackEngineTests {
     @Test func offlineStackWorksEndToEnd() async throws {
         let engine = ReflectionEngineFactory.makeOffline()
         #expect(try await engine.analyzeMood(anxiousText)?.mood == .anxious)
-        #expect(try await engine.prompts(for: anxiousText, mood: .anxious).count == ReflectionDefaults.promptCount)
+        #expect(try await engine.prompts(for: anxiousText, mood: .anxious).prompts.count == ReflectionDefaults.promptCount)
         await #expect(throws: ReflectionError.needsSupport) { try await engine.analyzeMood("I want to die") }
     }
 }
@@ -365,7 +370,7 @@ struct PrewarmTests {
     final class PrewarmSpy: ReflectionEngine {
         let count = Mutex(0)
         func analyzeMood(_ text: String) async throws -> MoodResult? { nil }
-        func prompts(for text: String, mood: Mood?) async throws -> [String] { [] }
+        func prompts(for text: String, mood: Mood?) async throws -> PromptSet { PromptSet(prompts: [], source: .ai) }
         func prewarm() { count.withLock { $0 += 1 } }
     }
 
@@ -387,15 +392,17 @@ struct LaunchEngineTests {
 
     @Test func mockAIUsesMockPrompts() async throws {
         let engine = ReflectionEngineFactory.makeForLaunch(arguments: ["-uiTesting", "-mockAI"])
-        #expect(try await engine.prompts(for: "A day.", mood: nil) == MockReflectionEngine.prompts)
+        #expect(try await engine.prompts(for: "A day.", mood: nil) == PromptSet(prompts: MockReflectionEngine.prompts, source: .ai))
         #expect(try await engine.analyzeMood("A day.") == MockReflectionEngine.mood)
     }
 
     @Test func mockFailureFallsBackToOffline() async throws {
         let engine = ReflectionEngineFactory.makeForLaunch(arguments: ["-uiTesting", "-mockAIFailure"])
-        let prompts = try await engine.prompts(for: "A day.", mood: nil)
-        #expect(prompts.count == ReflectionDefaults.promptCount)
-        #expect(Set(prompts).isDisjoint(with: MockReflectionEngine.prompts))
+        let result = try await engine.prompts(for: "A day.", mood: nil)
+        #expect(result.prompts.count == ReflectionDefaults.promptCount)
+        #expect(Set(result.prompts).isDisjoint(with: MockReflectionEngine.prompts))
+        #expect(result.source == .offline)
+        #expect(result.fallbackReason == .guardrail)
     }
 
     @Test func mockStillGoesThroughSafety() async {

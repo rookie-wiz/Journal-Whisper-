@@ -19,13 +19,17 @@ nonisolated struct FoundationModelsEngine: ReflectionEngine {
     let moodModel: SystemLanguageModel
     /// General model for writing prompts.
     let promptModel: SystemLanguageModel
+    /// Serialises model requests app-wide.
+    let scheduler: ModelScheduler
 
     init(
         moodModel: SystemLanguageModel = SystemLanguageModel(useCase: .contentTagging),
-        promptModel: SystemLanguageModel = .default
+        promptModel: SystemLanguageModel = .default,
+        scheduler: ModelScheduler = .shared
     ) {
         self.moodModel = moodModel
         self.promptModel = promptModel
+        self.scheduler = scheduler
     }
 
     /// Interactive callers wait at most this long before the offline fallback
@@ -38,7 +42,8 @@ nonisolated struct FoundationModelsEngine: ReflectionEngine {
         try ensureAvailable(moodModel)
         let model = moodModel
         let request = ReflectionInstructions.moodRequest(for: text)
-        return try await Self.run(timeout: Self.moodTimeout) {
+        // Background: a Reflect tap interrupts it; it re-runs later.
+        return try await schedule(.background, timeout: Self.moodTimeout) {
             let session = LanguageModelSession(model: model, instructions: ReflectionInstructions.mood)
             let response = try await session.respond(
                 to: request,
@@ -49,12 +54,12 @@ nonisolated struct FoundationModelsEngine: ReflectionEngine {
         }
     }
 
-    func prompts(for text: String, mood: Mood?) async throws -> [String] {
+    func prompts(for text: String, mood: Mood?) async throws -> PromptSet {
         try ensureAvailable(promptModel)
         let model = promptModel
         let request = ReflectionInstructions.promptsRequest(
             for: text, mood: mood, count: ReflectionDefaults.promptCount)
-        return try await Self.run(timeout: Self.promptTimeout) {
+        let prompts = try await schedule(.userInitiated, timeout: Self.promptTimeout) {
             let session = LanguageModelSession(model: model, instructions: ReflectionInstructions.prompts)
             let response = try await session.respond(
                 to: request,
@@ -63,6 +68,7 @@ nonisolated struct FoundationModelsEngine: ReflectionEngine {
             )
             return response.content.prompts
         }
+        return PromptSet(prompts: prompts, source: .ai)
     }
 
     /// Loads the prompt model (and its instructions) into memory ahead of the first request.
@@ -75,7 +81,25 @@ nonisolated struct FoundationModelsEngine: ReflectionEngine {
         guard model.isAvailable else { throw ReflectionError.generationFailed(.unavailable) }
     }
 
-    // MARK: - Timeout and errors
+    // MARK: - Scheduling, timeout and errors
+
+    /// Waits for the model, then runs `body` with a time limit. The limit starts
+    /// once the model is free, so time spent queued doesn't count against it.
+    /// A "busy" answer is retried once after a short pause.
+    private func schedule<T: Sendable>(
+        _ priority: ModelScheduler.Priority,
+        timeout: Duration,
+        _ body: @escaping @Sendable () async throws -> T
+    ) async throws -> T {
+        try await scheduler.run(priority: priority) {
+            do {
+                return try await Self.run(timeout: timeout, body)
+            } catch ReflectionError.generationFailed(.busy) {
+                try await Task.sleep(for: .seconds(1))
+                return try await Self.run(timeout: timeout, body)
+            }
+        }
+    }
 
     /// Runs a model call with a time limit, translating framework errors into
     /// `ReflectionError`. The session is created inside `body` so it never
@@ -99,6 +123,9 @@ nonisolated struct FoundationModelsEngine: ReflectionEngine {
         } catch let error as ReflectionError {
             throw error
         } catch {
+            // Interrupted by the scheduler or the caller: the framework may report
+            // this as its own error, but it isn't a model failure.
+            if Task.isCancelled { throw CancellationError() }
             let failure = failure(for: error)
             if failure == .other {
                 // Type and case name only (e.g. "GenerationError.rateLimited"), never the

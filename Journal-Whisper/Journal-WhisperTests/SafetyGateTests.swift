@@ -140,7 +140,7 @@ struct SafeguardedEngineTests {
             "What surprised you today?",
             "Have you thought about changing your medication?",
         ])
-        let prompts = try await SafeguardedEngine(stub).prompts(for: "A day.", mood: .neutral)
+        let prompts = try await SafeguardedEngine(stub).prompts(for: "A day.", mood: .neutral).prompts
         #expect(prompts.count == ReflectionDefaults.promptCount)
         #expect(prompts.first == "What surprised you today?")
         #expect(!prompts.contains { $0.contains("medication") })
@@ -174,9 +174,9 @@ final class StubEngine: ReflectionEngine {
         return mood
     }
 
-    func prompts(for text: String, mood: Mood?) async throws -> [String] {
+    func prompts(for text: String, mood: Mood?) async throws -> PromptSet {
         calls.withLock { $0 += 1 }
         if let error { throw error }
-        return cannedPrompts
+        return PromptSet(prompts: cannedPrompts, source: .ai)
     }
 }

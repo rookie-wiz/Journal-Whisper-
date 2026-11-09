@@ -21,17 +21,23 @@ nonisolated struct FallbackEngine: ReflectionEngine {
         do {
             return try await primary.analyzeMood(text)
         } catch let error where Self.shouldFallBack(from: error) {
-            Self.log(error, operation: "mood")
-            return try await fallback.analyzeMood(text)
+            let reason = Self.failure(of: error)
+            Self.log(reason, operation: "mood")
+            var result = try await fallback.analyzeMood(text)
+            result?.fallbackReason = reason
+            return result
         }
     }
 
-    func prompts(for text: String, mood: Mood?) async throws -> [String] {
+    func prompts(for text: String, mood: Mood?) async throws -> PromptSet {
         do {
             return try await primary.prompts(for: text, mood: mood)
         } catch let error where Self.shouldFallBack(from: error) {
-            Self.log(error, operation: "prompts")
-            return try await fallback.prompts(for: text, mood: mood)
+            let reason = Self.failure(of: error)
+            Self.log(reason, operation: "prompts")
+            var result = try await fallback.prompts(for: text, mood: mood)
+            result.fallbackReason = reason
+            return result
         }
     }
 
@@ -43,11 +49,13 @@ nonisolated struct FallbackEngine: ReflectionEngine {
         return true
     }
 
+    static func failure(of error: any Error) -> GenerationFailure {
+        if case .generationFailed(let failure)? = error as? ReflectionError { return failure }
+        return .other
+    }
+
     /// Logs only the failure kind; entry text is never logged.
-    private static func log(_ error: any Error, operation: StaticString) {
-        let kind = (error as? ReflectionError).flatMap { error -> GenerationFailure? in
-            if case .generationFailed(let failure) = error { failure } else { nil }
-        } ?? .other
-        logger.notice("Falling back to offline \(operation, privacy: .public): \(kind.rawValue, privacy: .public)")
+    private static func log(_ reason: GenerationFailure, operation: StaticString) {
+        logger.notice("Falling back to offline \(operation, privacy: .public): \(reason.rawValue, privacy: .public)")
     }
 }

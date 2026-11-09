@@ -141,19 +141,19 @@ struct HeuristicEngineTests {
     }
 
     @Test func promptsUseGivenMood() async throws {
-        let prompts = try await HeuristicEngine().prompts(for: "", mood: .overwhelmed)
+        let prompts = try await HeuristicEngine().prompts(for: "", mood: .overwhelmed).prompts
         let overwhelmed = Set(PromptBank.byMood[.overwhelmed]!)
         #expect(prompts.contains(where: overwhelmed.contains))
     }
 
     @Test func promptsInferMoodFromTextWhenMissing() async throws {
-        let prompts = try await HeuristicEngine().prompts(for: "So frustrated and annoyed.", mood: nil)
+        let prompts = try await HeuristicEngine().prompts(for: "So frustrated and annoyed.", mood: nil).prompts
         let frustrated = Set(PromptBank.byMood[.frustrated]!)
         #expect(prompts.contains(where: frustrated.contains))
     }
 
     @Test func blankEntryGetsGeneralPrompts() async throws {
-        let prompts = try await HeuristicEngine().prompts(for: "  ", mood: nil)
+        let prompts = try await HeuristicEngine().prompts(for: "  ", mood: nil).prompts
         #expect(prompts.count == ReflectionDefaults.promptCount)
         #expect(prompts.allSatisfy(PromptBank.general.contains))
     }

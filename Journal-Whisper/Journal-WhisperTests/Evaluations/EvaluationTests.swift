@@ -94,7 +94,10 @@ struct OfflineEvaluationTests {
     }
 }
 
-@Suite(.enabled(if: EvaluationRun.modelEvalsEnabled, "Set RUN_EVALS=1 with Apple Intelligence available"),
+// Serialized: the app's ModelScheduler lets prompt requests interrupt mood
+// analysis, so running these in parallel would cancel most mood requests.
+@Suite(.serialized,
+       .enabled(if: EvaluationRun.modelEvalsEnabled, "Set RUN_EVALS=1 with Apple Intelligence available"),
        .timeLimit(.minutes(20)))
 struct ModelEvaluationTests {
 

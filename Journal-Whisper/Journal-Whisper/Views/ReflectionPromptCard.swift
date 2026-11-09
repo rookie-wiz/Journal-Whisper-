@@ -28,14 +28,14 @@ struct ReflectionPromptCard: View {
             .padding()
             .background(.tint.opacity(0.08), in: .rect(cornerRadius: 14))
             .accessibilityIdentifier("promptsLoading")
-        case .ready(let prompts):
-            promptList(prompts)
+        case .ready(let set):
+            promptList(set.prompts, note: Self.note(for: set, availability: availability))
         case .support:
             SupportCard()
         }
     }
 
-    private func promptList(_ prompts: [String]) -> some View {
+    private func promptList(_ prompts: [String], note: String?) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Label("Reflect", systemImage: "lightbulb")
@@ -62,14 +62,36 @@ struct ReflectionPromptCard: View {
                 .accessibilityIdentifier("reflectionPrompt")
             }
 
-            if let note = availability.note {
+            if let note {
                 Text(note)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("promptNote")
             }
         }
         .padding()
         .background(.tint.opacity(0.08), in: .rect(cornerRadius: 14))
+    }
+}
+
+extension ReflectionPromptCard {
+    /// A calm, fixed line explaining general prompts, or nil for personalised ones.
+    /// Never the model's own explanation: that's unreviewed text.
+    static func note(for set: PromptSet, availability: ReflectionAvailability) -> String? {
+        guard set.source == .offline else { return nil }
+        // Something the user can act on (Apple Intelligence off, still downloading) comes first.
+        if let note = availability.note { return note }
+        switch set.fallbackReason {
+        case .guardrail?, .refusal?:
+            return String(localized: "Personalised prompts aren't available for this entry, so here are some general ones.")
+        case .unsupportedLanguage?:
+            return String(localized: "Personalised prompts aren't available in this language yet.")
+        case .contextTooLong?, .unavailable?, .busy?, .timeout?, .other?:
+            return String(localized: "Showing general prompts for now.")
+        case nil:
+            // Offline by design (e.g. an ineligible device): nothing to explain.
+            return nil
+        }
     }
 }
 
@@ -95,8 +117,8 @@ struct SupportCard: View {
 
 #Preview("Prompts") {
     ReflectionPromptCard(
-        state: .ready(Array(PromptBank.byMood[.calm]!.prefix(3))),
-        availability: .appleIntelligenceOff,
+        state: .ready(PromptSet(prompts: Array(PromptBank.byMood[.calm]!.prefix(3)), source: .offline, fallbackReason: .guardrail)),
+        availability: .available,
         onUse: { _ in }, onRefresh: {}, onDismiss: {}
     )
     .padding()

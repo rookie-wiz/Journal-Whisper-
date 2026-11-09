@@ -121,7 +121,7 @@ nonisolated struct PromptEvaluation: Evaluation {
     }
 
     func subject(from sample: PromptSample) async throws -> ModelSubject<[String]> {
-        let prompts = try await engine.prompts(for: sample.entry, mood: sample.mood.flatMap(Mood.init(rawValue:)))
+        let prompts = try await engine.prompts(for: sample.entry, mood: sample.mood.flatMap(Mood.init(rawValue:))).prompts
         return ModelSubject(value: prompts.map(SafetyGate.sanitize))
     }
 

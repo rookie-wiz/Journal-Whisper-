@@ -16,9 +16,9 @@ nonisolated struct HeuristicEngine: ReflectionEngine {
         Self.classify(text)
     }
 
-    func prompts(for text: String, mood: Mood?) async throws -> [String] {
+    func prompts(for text: String, mood: Mood?) async throws -> PromptSet {
         let mood = mood ?? Self.classify(text)?.mood
-        return PromptBank.pick(for: mood)
+        return PromptSet(prompts: PromptBank.pick(for: mood), source: .offline)
     }
 
     // MARK: - Classification

@@ -16,6 +16,23 @@ nonisolated struct MoodResult: Sendable, Equatable {
     let intensity: Int
     /// `.ai` or `.heuristic`; never `.user`.
     let source: MoodSource
+    /// Why the model's answer wasn't used, when the offline engine stepped in.
+    var fallbackReason: GenerationFailure? = nil
+}
+
+/// Where a result came from.
+nonisolated enum Provenance: String, Sendable, Equatable {
+    case ai
+    case offline
+}
+
+/// Reflection prompts plus where they came from, so the UI can say so calmly
+/// when they're general rather than personalised.
+nonisolated struct PromptSet: Sendable, Equatable {
+    let prompts: [String]
+    let source: Provenance
+    /// Why the model's prompts weren't used, when the offline engine stepped in.
+    var fallbackReason: GenerationFailure? = nil
 }
 
 nonisolated protocol ReflectionEngine: Sendable {
@@ -24,7 +41,7 @@ nonisolated protocol ReflectionEngine: Sendable {
 
     /// Returns a few open-ended reflection prompts for the entry.
     /// `mood` is the entry's current mood, if any; the text may be empty.
-    func prompts(for text: String, mood: Mood?) async throws -> [String]
+    func prompts(for text: String, mood: Mood?) async throws -> PromptSet
 
     /// Starts loading the model so the first request is fast. Optional.
     func prewarm()
@@ -58,6 +75,15 @@ nonisolated enum GenerationFailure: String, Equatable, Sendable {
     case busy
     case timeout
     case other
+
+    /// True when asking again with the same text will fail the same way, so the
+    /// model shouldn't be asked again until the text changes.
+    var isDeterministic: Bool {
+        switch self {
+        case .guardrail, .refusal, .contextTooLong, .unsupportedLanguage: true
+        case .unavailable, .busy, .timeout, .other: false
+        }
+    }
 }
 
 nonisolated enum ReflectionDefaults {

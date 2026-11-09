@@ -163,9 +163,13 @@ nonisolated struct SafeguardedEngine: ReflectionEngine {
 
     func prewarm() { base.prewarm() }
 
-    func prompts(for text: String, mood: Mood?) async throws -> [String] {
+    func prompts(for text: String, mood: Mood?) async throws -> PromptSet {
         guard SafetyGate.assess(text) == .clear else { throw ReflectionError.needsSupport }
         let raw = try await base.prompts(for: text, mood: mood)
-        return SafetyGate.cleanPrompts(raw, mood: mood)
+        return PromptSet(
+            prompts: SafetyGate.cleanPrompts(raw.prompts, mood: mood),
+            source: raw.source,
+            fallbackReason: raw.fallbackReason
+        )
     }
 }
