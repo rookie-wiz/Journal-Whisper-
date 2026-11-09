@@ -104,6 +104,20 @@ struct MoodMonthChart: View {
         }
     }
 
+    /// Weekly ticks, skipping one too close to the end to fit (it clipped at the edge).
+    private var axisDates: [Date] {
+        let calendar = Calendar.current
+        var dates: [Date] = []
+        var date = stats.range.start
+        let lastFitting = stats.range.end.addingTimeInterval(-4 * 86_400)
+        while date <= lastFitting {
+            dates.append(date)
+            guard let next = calendar.date(byAdding: .day, value: 7, to: date) else { break }
+            date = next
+        }
+        return dates
+    }
+
     /// Only moods that appear get a legend entry; each keeps its own colour.
     private var presentMoods: [Mood] { Mood.chartOrder.filter { stats.totals[$0] != nil } }
 
@@ -151,7 +165,7 @@ struct MoodMonthChart: View {
             }
         }
         .chartXAxis {
-            AxisMarks(values: .stride(by: .day, count: 7)) { _ in
+            AxisMarks(values: axisDates) { _ in
                 AxisValueLabel(format: .dateTime.day().month(.abbreviated))
             }
         }

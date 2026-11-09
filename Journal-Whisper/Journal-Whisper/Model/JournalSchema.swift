@@ -29,7 +29,9 @@ extension ModelContainer {
     /// The app's container: versioned schema plus migration plan.
     static func journal(inMemory: Bool = false) throws -> ModelContainer {
         let schema = Schema(versionedSchema: SchemaV1.self)
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
+        // No iCloud sync, ever: the privacy policy promises the journal stays on
+        // the device. Explicit, so adding an iCloud capability later can't turn it on.
+        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory, cloudKitDatabase: .none)
         return try ModelContainer(for: schema, migrationPlan: JournalMigrationPlan.self, configurations: [configuration])
     }
 }

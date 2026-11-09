@@ -20,6 +20,8 @@ struct JournalListView: View {
         case entry(JournalEntry)
         case recycleBin
         case insights
+        case support
+        case about
     }
 
     @State private var path: [Route] = []
@@ -70,6 +72,10 @@ struct JournalListView: View {
                     RecycleBinView()
                 case .insights:
                     InsightsView()
+                case .support:
+                    CrisisResourcesView()
+                case .about:
+                    AboutView()
                 }
             }
             .confirmationDialog(
@@ -120,8 +126,18 @@ struct JournalListView: View {
                     }
                 }
                 ToolbarItem(placement: .secondaryAction) {
+                    Button("Get Support", systemImage: "heart") {
+                        path.append(.support)
+                    }
+                }
+                ToolbarItem(placement: .secondaryAction) {
                     Button("Recently Deleted", systemImage: "trash") {
                         path.append(.recycleBin)
+                    }
+                }
+                ToolbarItem(placement: .secondaryAction) {
+                    Button("About & Privacy", systemImage: "info.circle") {
+                        path.append(.about)
                     }
                 }
                 ToolbarItem(placement: .primaryAction) {

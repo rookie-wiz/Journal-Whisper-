@@ -95,23 +95,49 @@ extension ReflectionPromptCard {
     }
 }
 
-/// Shown instead of prompts when an entry mentions self-harm, suicide, abuse or danger.
-/// Week 4 links this to a full crisis-resources screen.
+/// Shown instead of prompts when an entry mentions self-harm, suicide, abuse or
+/// danger, with one tap to helplines and emergency numbers.
 struct SupportCard: View {
+    @State private var showsResources = false
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
+            // fixedSize: this message must never be truncated, even nested in another card.
             Label("You don't have to go through this alone", systemImage: "heart")
                 .font(.subheadline.weight(.semibold))
+                .fixedSize(horizontal: false, vertical: true)
             Text("It sounds like things are really hard right now. Talking to someone you trust, or to a crisis line, can help.")
                 .font(.subheadline)
+                .fixedSize(horizontal: false, vertical: true)
             Text("If you're in danger, contact your local emergency number now.")
                 .font(.subheadline.weight(.medium))
+                .fixedSize(horizontal: false, vertical: true)
+            Button {
+                showsResources = true
+            } label: {
+                Label("Get support now", systemImage: "phone.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.pink)
+            .accessibilityIdentifier("getSupportNow")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(.pink.opacity(0.12), in: .rect(cornerRadius: 14))
-        .accessibilityElement(children: .combine)
+        // Contain (not combine) so the button stays its own, tappable element.
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("supportCard")
+        .sheet(isPresented: $showsResources) {
+            NavigationStack {
+                CrisisResourcesView()
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { showsResources = false }
+                        }
+                    }
+            }
+        }
     }
 }
 
