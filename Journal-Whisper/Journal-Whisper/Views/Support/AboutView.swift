@@ -12,6 +12,7 @@ import SwiftData
 struct AboutView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppLock.self) private var appLock
+    @Environment(MilestoneStore.self) private var milestones
 
     @State private var isConfirmingDelete = false
     @State private var authFailed = false
@@ -56,7 +57,7 @@ struct AboutView: View {
             } footer: {
                 Text(deleted
                      ? "All journal data has been deleted."
-                     : "Removes every entry, mood and summary from this iPhone, including Recently Deleted. This can't be undone.")
+                     : "Removes every entry, mood, summary and badge from this iPhone, including Recently Deleted. This can't be undone.")
             }
 
             Section {
@@ -71,7 +72,7 @@ struct AboutView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Every entry, mood and weekly summary will be removed from this iPhone. This can't be undone.")
+            Text("Every entry, mood, weekly summary and badge will be removed from this iPhone. This can't be undone.")
         }
         .alert("Authentication Failed", isPresented: $authFailed) {
             Button("OK", role: .cancel) {}
@@ -99,6 +100,7 @@ struct AboutView: View {
         try? modelContext.delete(model: WeeklySummary.self)
         try? modelContext.delete(model: JournalEntry.self)
         try? modelContext.save()
+        milestones.reset()
         deleted = true
     }
 
@@ -140,5 +142,6 @@ struct PrivacyPolicyView: View {
 #Preview {
     NavigationStack { AboutView() }
         .environment(AppLock())
+        .environment(MilestoneStore())
         .modelContainer(try! ModelContainer.journal(inMemory: true))
 }

@@ -4,6 +4,9 @@
 //
 //  Created by shubh on 03/11/26.
 //
+//  Shows nothing personal (no streak, no counts): nothing private appears
+//  before the journal is unlocked.
+//
 
 import SwiftUI
 import LocalAuthentication
@@ -13,26 +16,31 @@ struct LockScreenView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 0) {
             Spacer()
 
-            Image(systemName: "lock.fill")
-                .font(.system(size: 56))
-                .foregroundStyle(.tint)
+            VStack(spacing: 26) {
+                LanternView(brightness: 0.6, size: 200)
 
-            VStack(spacing: 8) {
-                Text("Journal Whisper")
-                    .font(.largeTitle.bold())
-                Text("Your journal is locked.")
-                    .foregroundStyle(.secondary)
-            }
+                VStack(spacing: 10) {
+                    Text("Welcome back")
+                        .font(.system(size: 34, weight: .black, design: .rounded))
+                        .accessibilityAddTraits(.isHeader)
+                    Text("Your lantern kept your pages safe while you were away.")
+                        .font(.system(.body, design: .rounded))
+                        .foregroundStyle(Theme.inkSecondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.horizontal, 32)
 
-            if let message = appLock.errorMessage {
-                Text(message)
-                    .font(.footnote)
-                    .foregroundStyle(.red)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
+                if let message = appLock.errorMessage {
+                    Text(message)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
             }
 
             Spacer()
@@ -41,14 +49,16 @@ struct LockScreenView: View {
                 Task { await appLock.unlock() }
             } label: {
                 Label(unlockTitle, systemImage: unlockIcon)
-                    .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .buttonStyle(.chunky)
             .disabled(appLock.isAuthenticating)
-            .padding(.horizontal, 32)
+            .padding(.horizontal, 28)
             .padding(.bottom, 32)
+            .accessibilityIdentifier("unlockButton")
         }
+        .foregroundStyle(Theme.ink)
+        .background(Theme.background.ignoresSafeArea())
+        .sensoryFeedback(.success, trigger: appLock.isUnlocked) { _, unlocked in unlocked }
         .task { autoPromptIfNeeded() }
         .onChange(of: scenePhase) { _, _ in autoPromptIfNeeded() }
     }
@@ -62,10 +72,10 @@ struct LockScreenView: View {
 
     private var unlockTitle: String {
         switch appLock.biometryType {
-        case .faceID: "Unlock with Face ID"
-        case .touchID: "Unlock with Touch ID"
-        case .opticID: "Unlock with Optic ID"
-        default: "Unlock with Passcode"
+        case .faceID: String(localized: "Open with Face ID")
+        case .touchID: String(localized: "Open with Touch ID")
+        case .opticID: String(localized: "Open with Optic ID")
+        default: String(localized: "Open with Passcode")
         }
     }
 

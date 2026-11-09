@@ -43,6 +43,7 @@
         "DEVELOPMENT_TEAM": "P27F7K7XJ2",
         "ENABLE_PREVIEWS": "YES",
         "GENERATE_INFOPLIST_FILE": "YES",
+        "INFOPLIST_KEY_CFBundleDisplayName": "Journal Whisper",
         "INFOPLIST_KEY_NSFaceIDUsageDescription": "Journal Whisper uses Face ID to keep your journal private.",
         "INFOPLIST_KEY_UIApplicationSceneManifest_Generation": "YES",
         "INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents": "YES",

@@ -11,6 +11,15 @@ import SwiftData
 @main
 struct Journal_WhisperApp: App {
     @State private var appLock = AppLock()
+    @State private var milestones: MilestoneStore = {
+        #if DEBUG
+        // UI tests start each run with no badges.
+        if ProcessInfo.processInfo.arguments.contains("-uiTesting") {
+            return MilestoneStore(defaults: UserDefaults(suiteName: "uiTesting.\(UUID().uuidString)")!)
+        }
+        #endif
+        return MilestoneStore()
+    }()
 
     /// Built once per launch; views read it from the environment.
     private let reflectionEngine: any ReflectionEngine = {
@@ -57,6 +66,7 @@ struct Journal_WhisperApp: App {
         WindowGroup {
             ContentView()
                 .environment(appLock)
+                .environment(milestones)
                 .environment(\.reflectionEngine, reflectionEngine)
                 .environment(\.summaryEngine, summaryEngine)
         }

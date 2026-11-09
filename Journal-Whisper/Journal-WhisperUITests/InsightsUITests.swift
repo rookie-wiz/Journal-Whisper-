@@ -32,6 +32,19 @@ final class InsightsUITests: XCTestCase {
     }
 
     @MainActor
+    func testJournalAndEditorScreens() throws {
+        app = XCUIApplication()
+        app.launchArguments = ["-uiTesting", "-mockAI", "-seedActive", "0", "-seedDeleted", "0", "-seedWeek"]
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Journal"].waitForExistence(timeout: 10))
+        sleep(4)   // let the badge celebration pass
+        screenshot("Journal list")
+        app.cells.element(boundBy: 1).tap()
+        XCTAssertTrue(app.buttons["moodChip"].waitForExistence(timeout: 5))
+        screenshot("Editor")
+    }
+
+    @MainActor
     func testStreakAndWeek() throws {
         launch()
         XCTAssertEqual(app.staticTexts["currentStreak"].label, "3 days")

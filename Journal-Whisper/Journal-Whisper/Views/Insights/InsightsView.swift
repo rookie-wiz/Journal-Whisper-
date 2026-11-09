@@ -12,6 +12,7 @@ import SwiftData
 struct InsightsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.summaryEngine) private var summaryEngine
+    @Environment(MilestoneStore.self) private var milestones
     @Query(
         filter: #Predicate<JournalEntry> { $0.deletedAt == nil },
         sort: \JournalEntry.createdAt
@@ -47,8 +48,10 @@ struct InsightsView: View {
 
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                let streak = StreakCalculator(calendar: calendar).summary(entryDates: streakDates)
+                CompanionCard(daysThisWeek: streak.daysThisWeek, store: milestones)
                 StreakCard(
-                    summary: StreakCalculator(calendar: calendar).summary(entryDates: streakDates),
+                    summary: streak,
                     weekDays: thisWeek,
                     writtenDays: Set(streakDates.map(weeks.day(of:)))
                 )
@@ -104,6 +107,9 @@ struct InsightsView: View {
             }
             .padding()
         }
+        .foregroundStyle(Theme.ink)
+        .fontDesign(.rounded)
+        .background(Theme.background.ignoresSafeArea())
         .navigationTitle("Insights")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: span) { anchor = .now }
@@ -177,7 +183,8 @@ struct InsightsView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(.background.secondary, in: .rect(cornerRadius: 16))
+        .background(Theme.surface, in: .rect(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.border, lineWidth: 2))
     }
 
     private func emptyNote(_ text: String) -> some View {
@@ -197,5 +204,6 @@ struct InsightsView: View {
         container.mainContext.insert(entry)
     }
     return NavigationStack { InsightsView() }
+        .environment(MilestoneStore())
         .modelContainer(container)
 }

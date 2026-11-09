@@ -28,6 +28,7 @@ nonisolated enum PrivacyPolicy {
             "Your entries: their titles, text and the dates you wrote and edited them.",
             "Moods: the ones you choose, and the ones the app suggests, with a note of which is which.",
             "Weekly summaries and short one-line notes about entries that the app writes to build them.",
+            "The milestone badges you've earned, and whether you've seen the welcome screens.",
             "All of this is kept in the app's private storage on your iPhone. It isn't synced to iCloud or any other service.",
         ]),
         Section(title: "On-device AI", body: [
@@ -42,7 +43,7 @@ nonisolated enum PrivacyPolicy {
         Section(title: "Deleting your data", body: [
             "Deleted entries stay in Recently Deleted for 30 days, then are removed permanently. Deleting them sooner requires Face ID or your passcode.",
             "When an entry is deleted or edited, the summary of that week is deleted too, so it never describes something you removed. An entry's one-line note is deleted with the entry.",
-            "You can delete all journal data at any time from About & Privacy. Deleting the app removes everything it stored on your iPhone.",
+            "You can delete all journal data, including badges, at any time from About & Privacy. Deleting the app removes everything it stored on your iPhone.",
         ]),
         Section(title: "Backups", body: [
             "Like other app data, your journal is included in your iPhone's backups (iCloud Backup or a backup on your computer) if you have backups turned on. Those backups are protected by Apple and by your computer's own security.",

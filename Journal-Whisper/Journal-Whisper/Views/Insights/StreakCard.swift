@@ -57,7 +57,8 @@ struct StreakCard: View {
             .accessibilityIdentifier("daysThisWeek")
         }
         .padding()
-        .background(.background.secondary, in: .rect(cornerRadius: 16))
+        .background(Theme.surface, in: .rect(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.border, lineWidth: 2))
     }
 
     private func dayCount(_ days: Int) -> String {

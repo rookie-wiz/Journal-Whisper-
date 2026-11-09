@@ -54,7 +54,8 @@ struct WeeklySummaryCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(.background.secondary, in: .rect(cornerRadius: 16))
+        .background(Theme.surface, in: .rect(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.border, lineWidth: 2))
         // A container, so its identifier doesn't overwrite the children's.
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("weeklySummaryCard")

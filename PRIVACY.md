@@ -9,6 +9,7 @@ Your journal stays on your iPhone. Journal Whisper has no accounts, no servers, 
 - Your entries: their titles, text and the dates you wrote and edited them.
 - Moods: the ones you choose, and the ones the app suggests, with a note of which is which.
 - Weekly summaries and short one-line notes about entries that the app writes to build them.
+- The milestone badges you've earned, and whether you've seen the welcome screens.
 - All of this is kept in the app's private storage on your iPhone. It isn't synced to iCloud or any other service.
 
 ## On-device AI
@@ -26,7 +27,7 @@ Your journal stays on your iPhone. Journal Whisper has no accounts, no servers, 
 
 - Deleted entries stay in Recently Deleted for 30 days, then are removed permanently. Deleting them sooner requires Face ID or your passcode.
 - When an entry is deleted or edited, the summary of that week is deleted too, so it never describes something you removed. An entry's one-line note is deleted with the entry.
-- You can delete all journal data at any time from About & Privacy. Deleting the app removes everything it stored on your iPhone.
+- You can delete all journal data, including badges, at any time from About & Privacy. Deleting the app removes everything it stored on your iPhone.
 
 ## Backups
 

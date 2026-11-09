@@ -9,6 +9,7 @@ import SwiftData
 struct JournalListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppLock.self) private var appLock
+    @Environment(MilestoneStore.self) private var milestones
     @Query(
         filter: #Predicate<JournalEntry> { $0.deletedAt == nil },
         sort: \JournalEntry.createdAt,
@@ -45,6 +46,7 @@ struct JournalListView: View {
                     NavigationLink(value: Route.entry(entry)) {
                         EntryRow(entry: entry)
                     }
+                    .listRowBackground(Theme.surface)
                     .swipeActions(edge: .leading, allowsFullSwipe: true) {
                         Button("Edit", systemImage: "pencil") {
                             edit(entry)
@@ -58,6 +60,9 @@ struct JournalListView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Theme.background.ignoresSafeArea())
+            .fontDesign(.rounded)
             .navigationTitle("Journal")
             // One typed destination for the whole stack. Mixing this with
             // navigationDestination(isPresented:) made the bin re-render in a loop.
@@ -109,6 +114,7 @@ struct JournalListView: View {
                     } actions: {
                         Button("New Entry", action: addEntry)
                             .buttonStyle(.borderedProminent)
+                            .fontDesign(.rounded)
                     }
                 } else if filteredEntries.isEmpty {
                     ContentUnavailableView.search(text: searchText)
@@ -145,6 +151,24 @@ struct JournalListView: View {
                 }
             }
         }
+        // Badges: checked whenever the journal changes; earned ones are kept forever.
+        .task(id: entries.milestoneProgress) {
+            milestones.update(with: entries.milestoneProgress)
+        }
+        .overlay(alignment: .bottom) {
+            if let milestone = milestones.justEarned {
+                BadgeToast(milestone: milestone)
+                    .padding(.bottom, 96)   // above the search field
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .allowsHitTesting(false)   // never blocks a tap
+                    .task(id: milestone) {
+                        try? await Task.sleep(for: .seconds(3))
+                        withAnimation { milestones.justEarned = nil }
+                    }
+            }
+        }
+        .animation(.spring(duration: 0.4), value: milestones.justEarned)
+        .sensoryFeedback(.success, trigger: milestones.justEarned) { _, new in new != nil }
     }
 
     private func addEntry() {

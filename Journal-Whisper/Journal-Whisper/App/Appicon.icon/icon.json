@@ -1,20 +1,13 @@
 {
   "fill" : {
-    "automatic-gradient" : "extended-srgb:0.00000,0.53333,1.00000,1.00000"
+    "automatic-gradient" : "extended-srgb:0.99216,0.89020,0.76863,1.00000"
   },
   "groups" : [
     {
       "layers" : [
         {
-          "image-name" : "option2-feather-scribble-layer.svg",
-          "name" : "option2-feather-scribble-layer",
-          "position" : {
-            "scale" : 0.5,
-            "translation-in-points" : [
-              252,
-              -7.241739991846202
-            ]
-          }
+          "image-name" : "lantern.svg",
+          "name" : "lantern"
         }
       ],
       "shadow" : {
@@ -23,21 +16,14 @@
       },
       "translucency" : {
         "enabled" : true,
-        "value" : 0.3
+        "value" : 0.2
       }
     },
     {
       "layers" : [
         {
-          "image-name" : "option2-journal-layer.svg",
-          "name" : "option2-journal-layer",
-          "position" : {
-            "scale" : 1,
-            "translation-in-points" : [
-              0,
-              -15
-            ]
-          }
+          "image-name" : "lantern-book.svg",
+          "name" : "book"
         }
       ],
       "shadow" : {
@@ -46,24 +32,16 @@
       },
       "translucency" : {
         "enabled" : true,
-        "value" : 0.3
+        "value" : 0.2
       }
     },
     {
       "layers" : [
         {
-          "image-name" : "option2-background.svg",
-          "name" : "option2-background"
+          "image-name" : "lantern-background.svg",
+          "name" : "background"
         }
-      ],
-      "shadow" : {
-        "kind" : "neutral",
-        "opacity" : 0.5
-      },
-      "translucency" : {
-        "enabled" : true,
-        "value" : 0.3
-      }
+      ]
     }
   ],
   "supported-platforms" : {

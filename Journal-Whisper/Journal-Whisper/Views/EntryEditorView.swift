@@ -77,6 +77,8 @@ struct EntryEditorView: View {
             .padding()
         }
         .scrollDismissesKeyboard(.interactively)
+        .background(Theme.background.ignoresSafeArea())
+        .fontDesign(.rounded)
         .sheet(isPresented: $isPickingMood) {
             MoodPickerSheet(entry: entry)
         }
