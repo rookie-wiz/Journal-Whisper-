@@ -95,10 +95,19 @@ nonisolated struct TemplateSummaryEngine: SummaryEngine {
         }
     }
 
-    /// The same question every time the same week is shown.
+    /// A question for the week ahead: the same one every time the same week is
+    /// shown. Bank prompts about "today" are skipped; they read oddly here
+    /// (found by the summary evaluation).
     static func closingQuestion(for week: WeekSnapshot) -> String? {
         var random = StableRandom(seed: UInt64(bitPattern: Int64(week.week.start.timeIntervalSinceReferenceDate)))
-        return PromptBank.pick(for: week.statistics.dominantMood, count: 1, using: &random).first
+        let moodPrompts = week.statistics.dominantMood.flatMap { PromptBank.byMood[$0] } ?? []
+        let candidates = (moodPrompts + PromptBank.general).filter(isAboutTheWeek)
+        return candidates.isEmpty ? nil : candidates[Int(random.next() % UInt64(candidates.count))]
+    }
+
+    /// False for questions tied to a single day ("today", "tonight").
+    static func isAboutTheWeek(_ question: String) -> Bool {
+        Set(HeuristicEngine.tokenize(question)).isDisjoint(with: ["today", "tonight"])
     }
 }
 

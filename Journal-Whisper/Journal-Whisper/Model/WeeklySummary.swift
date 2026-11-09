@@ -82,5 +82,6 @@ final class WeeklySummary {
 /// Bump when the summary format, template or instructions change, so saved
 /// summaries are regenerated.
 nonisolated enum SummaryVersion {
-    static let current = 1
+    /// 2: template closing questions no longer mention "today".
+    static let current = 2
 }

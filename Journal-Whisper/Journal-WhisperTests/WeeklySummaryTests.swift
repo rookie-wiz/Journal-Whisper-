@@ -130,6 +130,20 @@ struct TemplateSummaryTests {
         #expect(TemplateSummaryEngine.closingQuestion(for: snap) == TemplateSummaryEngine.closingQuestion(for: snap))
     }
 
+    @Test func closingQuestionIsNeverAboutToday() {
+        // Every mood, plus no mood, across many weeks.
+        for mood in Mood.allCases + [nil] {
+            for offset in 0..<20 {
+                let start = WeekCalendar(calendar: india).week(offsetBy: offset, from: week)
+                let snap = WeekSnapshot(week: start, entries: [EntrySnapshot(
+                    createdAt: start.start.addingTimeInterval(3600), updatedAt: start.start.addingTimeInterval(3600),
+                    text: "Words.", mood: mood, gist: nil)], calendar: india)
+                let question = TemplateSummaryEngine.closingQuestion(for: snap)
+                #expect(question.map(TemplateSummaryEngine.isAboutTheWeek) == true, "\(String(describing: question))")
+            }
+        }
+    }
+
     @Test func noQuestionForWeeksNeedingSupport() {
         #expect(TemplateSummaryEngine.draft(for: snapshot([entry(10, .sad, text: "I want to die.")])).closingQuestion == nil)
     }
