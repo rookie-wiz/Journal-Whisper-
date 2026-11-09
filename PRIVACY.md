@@ -49,4 +49,4 @@ Your journal stays on your iPhone. Journal Whisper has no accounts, no servers, 
 ## Changes and contact
 
 - If this policy changes, the new version will be in the app with a new date.
-- Questions: [your contact email]
+- Questions: subhchauhan816@gmail.com

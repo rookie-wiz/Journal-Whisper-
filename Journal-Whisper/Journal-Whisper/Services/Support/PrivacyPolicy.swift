@@ -12,8 +12,7 @@ import Foundation
 nonisolated enum PrivacyPolicy {
     static let lastUpdated = "9 November 2026"
 
-    /// Replace before publishing the policy.
-    static let contact = "[your contact email]"
+    static let contact = "subhchauhan816@gmail.com"
 
     struct Section: Identifiable, Sendable {
         let title: String
