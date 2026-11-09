@@ -11,6 +11,7 @@ import Foundation
 import Observation
 import SwiftData
 import SwiftUI
+import FoundationModels
 
 @Observable
 final class WeeklySummaryCoordinator {
@@ -27,12 +28,26 @@ final class WeeklySummaryCoordinator {
     private(set) var needsSupport = false
 
     private let engine: any SummaryEngine
+    /// Whether the on-device model can be used now (to retry offline summaries).
+    private let modelAvailable: () -> Bool
     private var task: Task<Void, Never>?
     /// Fingerprint of the most recent request, so a slow, outdated result is dropped.
     private var latestFingerprint: String?
 
-    init(engine: any SummaryEngine) {
+    init(engine: any SummaryEngine, modelAvailable: @escaping () -> Bool = { SystemLanguageModel.default.isAvailable }) {
         self.engine = engine
+        self.modelAvailable = modelAvailable
+    }
+
+    /// An offline summary made because the model was unavailable, slow or busy
+    /// is worth retrying once the model can be used, but not on every visit.
+    static let retryInterval: TimeInterval = 10 * 60
+
+    func shouldRetry(_ stored: WeeklySummary, now: Date = .now) -> Bool {
+        guard stored.source == .offline,
+              let reason = stored.fallbackReason, !reason.isDeterministic
+        else { return false }
+        return modelAvailable() && now.timeIntervalSince(stored.generatedAt) > Self.retryInterval
     }
 
     func refresh(week: DateInterval, entries: [JournalEntry], context: ModelContext, calendar: Calendar = .current) {
@@ -48,7 +63,7 @@ final class WeeklySummaryCoordinator {
             state = .empty
             return
         }
-        if let stored, stored.isCurrent(for: snapshot.fingerprint) {
+        if let stored, stored.isCurrent(for: snapshot.fingerprint), !shouldRetry(stored) {
             state = .ready(stored.draft, entryCount: stored.entryCount, generatedAt: stored.generatedAt)
             return
         }
@@ -66,6 +81,7 @@ final class WeeklySummaryCoordinator {
                 draft.fallbackReason = .other
             }
             guard !Task.isCancelled, let self, self.latestFingerprint == snapshot.fingerprint else { return }
+            self.cacheGists(draft.gists, on: entries)
             self.save(draft, for: snapshot, in: context)
         }
     }
@@ -73,6 +89,17 @@ final class WeeklySummaryCoordinator {
     /// Awaits the current generation, for tests.
     func waitForCompletion() async {
         await task?.value
+    }
+
+    /// Stores per-entry notes on the exact entry versions they were written from.
+    private func cacheGists(_ gists: [GistKey: String], on entries: [JournalEntry]) {
+        guard !gists.isEmpty else { return }
+        for entry in entries {
+            if let gist = gists[GistKey(createdAt: entry.createdAt, updatedAt: entry.updatedAt)] {
+                entry.gist = gist
+                entry.gistSourceUpdatedAt = entry.updatedAt
+            }
+        }
     }
 
     private func save(_ draft: SummaryDraft, for snapshot: WeekSnapshot, in context: ModelContext) {
@@ -96,6 +123,6 @@ final class WeeklySummaryCoordinator {
 }
 
 extension EnvironmentValues {
-    /// The engine Insights uses for weekly summaries. Offline template for now.
-    @Entry var summaryEngine: any SummaryEngine = TemplateSummaryEngine()
+    /// The engine Insights uses for weekly summaries.
+    @Entry var summaryEngine: any SummaryEngine = SummaryEngineFactory.makeDefault()
 }

@@ -42,7 +42,7 @@ struct WeeklySummaryCard: View {
                     }
                 }
 
-                Text(footer(draft: draft, entryCount: entryCount))
+                Text(Self.footer(draft: draft, entryCount: entryCount))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("summaryFooter")
@@ -60,14 +60,21 @@ struct WeeklySummaryCard: View {
         .accessibilityIdentifier("weeklySummaryCard")
     }
 
-    private func footer(draft: SummaryDraft, entryCount: Int) -> String {
+    /// Says what the summary is based on. For the offline template, says so
+    /// calmly, and why when the model declined; never the model's own words.
+    static func footer(draft: SummaryDraft, entryCount: Int) -> String {
         let based = entryCount == 1
             ? String(localized: "Based on 1 entry")
             : String(localized: "Based on \(entryCount) entries")
-        // The template only uses moods and counts; say so, calmly.
-        return draft.source == .offline
-            ? based + String(localized: " · from your moods and writing days")
-            : based
+        guard draft.source == .offline else { return based }
+        switch draft.fallbackReason {
+        case .guardrail?, .refusal?:
+            return based + String(localized: " · a written summary wasn't available for this week, so this one comes from your moods")
+        case .unavailable?, .busy?, .timeout?, .other?, .contextTooLong?, .unsupportedLanguage?:
+            return based + String(localized: " · from your moods and writing days for now")
+        case nil:
+            return based + String(localized: " · from your moods and writing days")
+        }
     }
 }
 

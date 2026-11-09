@@ -17,6 +17,23 @@ nonisolated struct SummaryDraft: Sendable, Equatable {
     var fallbackReason: GenerationFailure? = nil
     /// One reflection question for the week ahead. Nil for weeks that need support.
     var closingQuestion: String? = nil
+    /// Per-entry notes written along the way, to cache on the entries.
+    var gists: [GistKey: String] = [:]
+}
+
+/// Identifies the exact version of an entry a gist was written from.
+nonisolated struct GistKey: Hashable, Sendable {
+    let createdAt: Date
+    let updatedAt: Date
+
+    init(createdAt: Date, updatedAt: Date) {
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+
+    init(_ entry: EntrySnapshot) {
+        self.init(createdAt: entry.createdAt, updatedAt: entry.updatedAt)
+    }
 }
 
 nonisolated protocol SummaryEngine: Sendable {

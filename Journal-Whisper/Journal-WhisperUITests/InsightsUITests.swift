@@ -48,14 +48,28 @@ final class InsightsUITests: XCTestCase {
         launch()
         let text = app.staticTexts["summaryText"]
         XCTAssertTrue(text.waitForExistence(timeout: 5))
-        XCTAssertTrue(text.label.hasPrefix("You wrote"), text.label)
+        // -mockAI: MockSummaryEngine's fixed text.
+        XCTAssertEqual(text.label, "This week you made time to write, and calm moments sat alongside some worry.")
         XCTAssertTrue(app.staticTexts["summaryQuestion"].exists)
-        XCTAssertTrue(app.staticTexts["summaryFooter"].label.contains("from your moods and writing days"))
+        let footer = app.staticTexts["summaryFooter"].label
+        XCTAssertTrue(footer.hasPrefix("Based on"), footer)
+        XCTAssertFalse(footer.contains("moods"), "A written summary needs no explanation: \(footer)")
         screenshot("Weekly summary")
 
         // Only weeks get a summary.
         app.segmentedControls["insightsSpan"].buttons["Month"].tap()
         XCTAssertFalse(app.descendants(matching: .any)["weeklySummaryCard"].exists)
+    }
+
+    @MainActor
+    func testDeclinedSummaryFallsBackCalmly() throws {
+        launch(["-mockAIFailure"])
+        let text = app.staticTexts["summaryText"]
+        XCTAssertTrue(text.waitForExistence(timeout: 5))
+        XCTAssertTrue(text.label.hasPrefix("You wrote"), "Offline template: \(text.label)")
+        let footer = app.staticTexts["summaryFooter"].label
+        XCTAssertTrue(footer.contains("wasn't available for this week"), footer)
+        screenshot("Weekly summary declined")
     }
 
     @MainActor

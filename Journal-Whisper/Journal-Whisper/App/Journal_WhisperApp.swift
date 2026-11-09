@@ -21,6 +21,14 @@ struct Journal_WhisperApp: App {
         #endif
     }()
 
+    private let summaryEngine: any SummaryEngine = {
+        #if DEBUG
+        SummaryEngineFactory.makeForLaunch()
+        #else
+        SummaryEngineFactory.makeDefault()
+        #endif
+    }()
+
     var sharedModelContainer: ModelContainer = {
         #if DEBUG
         let inMemory = ProcessInfo.processInfo.arguments.contains("-uiTesting")
@@ -50,6 +58,7 @@ struct Journal_WhisperApp: App {
             ContentView()
                 .environment(appLock)
                 .environment(\.reflectionEngine, reflectionEngine)
+                .environment(\.summaryEngine, summaryEngine)
         }
         .modelContainer(sharedModelContainer)
     }
