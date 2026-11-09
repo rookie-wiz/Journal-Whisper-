@@ -43,6 +43,29 @@ nonisolated enum Mood: String, CaseIterable, Codable, Identifiable {
     /// Valid range for `JournalEntry.moodIntensity`.
     static let intensityRange = 1...5
     static let defaultIntensity = 3
+
+    /// Coarse grouping used for trends and to score near-misses. Not shown as a
+    /// "score": reducing feelings to good and bad would feel judgmental.
+    var valence: Valence {
+        switch self {
+        case .joyful, .content, .calm: .positive
+        case .neutral: .neutral
+        case .anxious, .sad, .frustrated, .overwhelmed: .negative
+        }
+    }
+}
+
+nonisolated enum Valence: String, CaseIterable, Sendable {
+    case positive, neutral, negative
+
+    /// +1, 0 or -1, for averaging.
+    var weight: Double {
+        switch self {
+        case .positive: 1
+        case .neutral: 0
+        case .negative: -1
+        }
+    }
 }
 
 /// Who set an entry's mood. A mood the user picked is never replaced by a suggestion.

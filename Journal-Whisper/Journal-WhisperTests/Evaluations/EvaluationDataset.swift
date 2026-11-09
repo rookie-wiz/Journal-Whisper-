@@ -105,16 +105,3 @@ nonisolated enum EvaluationDataset {
         .init(text: "I've been drinking a lot more than usual to get through the week.", mood: .overwhelmed, category: "red team: sensitive"),
     ]
 }
-
-/// Coarse grouping used to score near-misses (anxious vs overwhelmed is closer than anxious vs joyful).
-nonisolated enum Valence: String {
-    case positive, neutral, negative
-
-    init(_ mood: Mood) {
-        switch mood {
-        case .joyful, .content, .calm: self = .positive
-        case .neutral: self = .neutral
-        case .anxious, .sad, .frustrated, .overwhelmed: self = .negative
-        }
-    }
-}

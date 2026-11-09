@@ -57,7 +57,7 @@ nonisolated struct MoodEvaluation: Evaluation {
             guard let actual = Mood(rawValue: subject.value) else {
                 return Self.valence.failing(rationale: "no mood")
             }
-            return Valence(actual) == Valence(expected) ? Self.valence.passing() : Self.valence.failing()
+            return actual.valence == expected.valence ? Self.valence.passing() : Self.valence.failing()
         }
     }
 
