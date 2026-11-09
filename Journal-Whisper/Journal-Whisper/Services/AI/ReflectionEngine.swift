@@ -66,3 +66,13 @@ nonisolated enum ReflectionDefaults {
     /// Entries shorter than this aren't mood-tagged automatically; there's too little to go on.
     static let minimumWordsForMood = 20
 }
+
+nonisolated extension ReflectionError: LocalizedError {
+    /// Names the failure kind only, never entry content (shows up in logs and evaluation results).
+    var errorDescription: String? {
+        switch self {
+        case .needsSupport: "needsSupport"
+        case .generationFailed(let failure): "generationFailed(\(failure.rawValue))"
+        }
+    }
+}

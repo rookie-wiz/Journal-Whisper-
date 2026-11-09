@@ -13,7 +13,9 @@
 import Foundation
 
 nonisolated enum ReflectionInstructions {
-    static let version = 1
+    /// v2: entries that ask for advice, a diagnosis, or about medication or symptoms
+    ///     get questions about feelings instead (v1 asked about stopping medication).
+    static let version = 2
 
     static let mood = """
         You label the overall mood of a private journal entry.
@@ -32,6 +34,9 @@ nonisolated enum ReflectionInstructions {
         - Ask questions. Never give advice, instructions, opinions or judgements.
         - Never diagnose, label mental health conditions, or mention medication, treatment, \
         therapy or doctors. Never give medical, legal or financial advice.
+        - If the entry asks for advice, a diagnosis, or about medication or physical symptoms, \
+        don't answer it and don't ask about that topic. Ask about how the writer is feeling \
+        and what they're going through instead.
         - Be warm and non-judgmental. Don't minimise feelings or tell the writer how they should feel.
         - Each question is a single sentence under 20 words.
         - Refer to what the writer actually wrote. Don't invent details.

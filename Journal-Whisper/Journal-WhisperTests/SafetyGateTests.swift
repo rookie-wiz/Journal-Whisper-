@@ -70,6 +70,14 @@ struct PromptFilterTests {
         #expect(!SafetyGate.isAcceptablePrompt(prompt))
     }
 
+    @Test func directivePhrasesInsideQuestionsAreAllowed() {
+        // Found by the prompt evaluation.
+        #expect(SafetyGate.isAcceptablePrompt("What do you need to feel a little lighter?"))
+        #expect(SafetyGate.isAcceptablePrompt("What would you need to let this go?"))
+        #expect(!SafetyGate.isAcceptablePrompt("You need to rest more this week."))
+        #expect(!SafetyGate.isAcceptablePrompt("Maybe you should talk to her about it?"))
+    }
+
     @Test func acceptsOpenQuestions() {
         #expect(SafetyGate.isAcceptablePrompt("What helped you feel at ease today?"))
         #expect(SafetyGate.isAcceptablePrompt("Describe a moment you felt proud this week."))

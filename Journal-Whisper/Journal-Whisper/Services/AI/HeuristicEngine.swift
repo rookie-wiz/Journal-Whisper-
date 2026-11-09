@@ -25,17 +25,21 @@ nonisolated struct HeuristicEngine: ReflectionEngine {
 
     /// Synchronous core, also used directly by tests.
     static func classify(_ text: String) -> MoodResult? {
-        let tokens = tokenize(text)
-        guard !tokens.isEmpty else { return nil }
+        // Match within clauses so a negator never reaches across punctuation:
+        // in "No rush, no plans. Very at ease." the "no" doesn't negate "at ease".
+        let clauses = clauses(of: text)
+        guard !clauses.isEmpty else { return nil }
 
         var best: (mood: Mood, hits: Int, intensified: Bool, lastIndex: Int)?
         for mood in Mood.allCases {
             var hits = 0, intensified = false, lastIndex = -1
             for phrase in MoodLexicon.phrases[mood] ?? [] {
-                for index in matches(of: phrase, in: tokens) where !isNegated(at: index, in: tokens) {
-                    hits += 1
-                    lastIndex = max(lastIndex, index)
-                    if isIntensified(at: index, in: tokens) { intensified = true }
+                for clause in clauses {
+                    for index in matches(of: phrase, in: clause.tokens) where !isNegated(at: index, in: clause.tokens) {
+                        hits += 1
+                        lastIndex = max(lastIndex, clause.offset + index)
+                        if isIntensified(at: index, in: clause.tokens) { intensified = true }
+                    }
                 }
             }
             guard hits > 0 else { continue }
@@ -50,6 +54,18 @@ nonisolated struct HeuristicEngine: ReflectionEngine {
             intensity: intensity(hits: best.hits, intensified: best.intensified, text: text),
             source: .heuristic
         )
+    }
+
+    /// Tokenized clauses, split on sentence and clause punctuation, with each
+    /// clause's position in the whole entry (for the "mentioned last" tie-break).
+    static func clauses(of text: String) -> [(tokens: [String], offset: Int)] {
+        var offset = 0
+        return text.split(whereSeparator: { ".!?;,\n".contains($0) }).compactMap { part in
+            let tokens = tokenize(String(part))
+            guard !tokens.isEmpty else { return nil }
+            defer { offset += tokens.count }
+            return (tokens, offset)
+        }
     }
 
     /// Lowercased words, keeping apostrophes so "don't" stays one token.

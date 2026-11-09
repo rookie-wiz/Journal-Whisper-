@@ -34,6 +34,15 @@ struct HeuristicClassifierTests {
         #expect(HeuristicEngine.classify("Wasn't really stressed today.") == nil)
     }
 
+    @Test func negationDoesNotCrossPunctuation() {
+        // Found by the offline mood evaluation.
+        #expect(HeuristicEngine.classify("No rush, no plans. Very at ease.")?.mood == .calm)
+        #expect(HeuristicEngine.classify("I wasn't invited. Feeling lonely and a bit down.")?.mood == .sad)
+        #expect(HeuristicEngine.classify("Not tired, just happy.")?.mood == .joyful)
+        // Negation within the same clause still applies.
+        #expect(HeuristicEngine.classify("I am not at ease.") == nil)
+    }
+
     @Test func ambiguousWordsOnlyCountInPhrases() {
         #expect(HeuristicEngine.classify("I sat down and missed the bus.") == nil)
         #expect(HeuristicEngine.classify("Feeling down tonight.")?.mood == .sad)

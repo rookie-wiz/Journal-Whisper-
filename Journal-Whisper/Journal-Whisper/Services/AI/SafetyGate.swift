@@ -98,7 +98,7 @@ nonisolated enum SafetyGate {
         if tokens.contains(where: { token in
             blockedWords.contains(token) || blockedPrefixes.contains { token.hasPrefix($0) }
         }) { return false }
-        if blockedPhrases.contains(where: { containsPhrase($0, in: tokens) }) { return false }
+        if blockedPhrases.contains(where: { isDirective($0, in: tokens) }) { return false }
         // A prompt should never itself contain crisis wording.
         return assess(prompt) == .clear
     }
@@ -122,6 +122,21 @@ nonisolated enum SafetyGate {
     /// Lowercased words with apostrophes removed, so "don't" and "dont" match the same phrase.
     private static func normalizedTokens(_ text: String) -> [String] {
         HeuristicEngine.tokenize(text).map { $0.replacingOccurrences(of: "'", with: "") }
+    }
+
+    /// Words that turn a following "you need to" / "you should" into a question
+    /// ("What do you need to feel lighter?") rather than an instruction.
+    private static let questionLeads: Set<String> = ["do", "did", "does", "would", "could", "might", "will"]
+
+    /// True if the phrase appears as an instruction, not as part of a question.
+    /// Found by the prompt evaluation: v1 of this check rejected
+    /// "What do you need to feel a little lighter?".
+    private static func isDirective(_ phrase: [String], in tokens: [String]) -> Bool {
+        guard !phrase.isEmpty, tokens.count >= phrase.count else { return false }
+        return (0...(tokens.count - phrase.count)).contains { start in
+            phrase.indices.allSatisfy { tokens[start + $0] == phrase[$0] }
+                && !(start > 0 && questionLeads.contains(tokens[start - 1]))
+        }
     }
 
     private static func containsPhrase(_ phrase: [String], in tokens: [String]) -> Bool {
