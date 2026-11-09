@@ -19,6 +19,8 @@ struct EntryEditorView: View {
     @State private var isPickingMood = false
     /// Created on appear, once the environment's engine is available.
     @State private var reflection: ReflectionCoordinator?
+    /// `updatedAt` when the editor opened, to tell whether the text changed.
+    @State private var updatedAtOnOpen: Date?
 
     var body: some View {
         ScrollView {
@@ -92,6 +94,7 @@ struct EntryEditorView: View {
                 reflection = ReflectionCoordinator(engine: reflectionEngine)
             }
             reflection?.entryDidAppear(entry)
+            if updatedAtOnOpen == nil { updatedAtOnOpen = entry.updatedAt }
         }
         .onChange(of: entry.title) { textDidChange() }
         .onChange(of: entry.text) { textDidChange() }
@@ -101,6 +104,10 @@ struct EntryEditorView: View {
                 modelContext.delete(entry)
             } else {
                 reflection?.entryWillClose(entry)
+                // Edited: the week's saved summary may describe text that's gone.
+                if let updatedAtOnOpen, entry.updatedAt > updatedAtOnOpen {
+                    WeeklySummary.discard(weekContaining: entry.createdAt, in: modelContext)
+                }
             }
         }
     }

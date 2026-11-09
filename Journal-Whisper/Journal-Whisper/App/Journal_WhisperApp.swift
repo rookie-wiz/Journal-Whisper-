@@ -22,18 +22,14 @@ struct Journal_WhisperApp: App {
     }()
 
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            JournalEntry.self,
-        ])
         #if DEBUG
         let inMemory = ProcessInfo.processInfo.arguments.contains("-uiTesting")
         #else
         let inMemory = false
         #endif
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
 
         do {
-            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let container = try ModelContainer.journal(inMemory: inMemory)
             #if DEBUG
             DebugSeed.apply(to: container)
             #endif

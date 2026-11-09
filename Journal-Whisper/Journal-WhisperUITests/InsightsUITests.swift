@@ -44,6 +44,21 @@ final class InsightsUITests: XCTestCase {
     }
 
     @MainActor
+    func testWeeklySummaryCard() throws {
+        launch()
+        let text = app.staticTexts["summaryText"]
+        XCTAssertTrue(text.waitForExistence(timeout: 5))
+        XCTAssertTrue(text.label.hasPrefix("You wrote"), text.label)
+        XCTAssertTrue(app.staticTexts["summaryQuestion"].exists)
+        XCTAssertTrue(app.staticTexts["summaryFooter"].label.contains("from your moods and writing days"))
+        screenshot("Weekly summary")
+
+        // Only weeks get a summary.
+        app.segmentedControls["insightsSpan"].buttons["Month"].tap()
+        XCTAssertFalse(app.descendants(matching: .any)["weeklySummaryCard"].exists)
+    }
+
+    @MainActor
     func testMonthChartAndNavigation() throws {
         launch()
         app.segmentedControls["insightsSpan"].buttons["Month"].tap()
@@ -71,6 +86,7 @@ final class InsightsUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["currentStreak"].label, "0 days")
         XCTAssertTrue(app.staticTexts["Write today to start a new streak."].exists)
         XCTAssertTrue(app.staticTexts["No entries this week."].exists)
+        XCTAssertTrue(app.staticTexts["Write this week to see a summary here."].exists)
         screenshot("Insights empty")
     }
 }

@@ -10,6 +10,8 @@ import SwiftUI
 import SwiftData
 
 struct InsightsView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.summaryEngine) private var summaryEngine
     @Query(
         filter: #Predicate<JournalEntry> { $0.deletedAt == nil },
         sort: \JournalEntry.createdAt
@@ -26,6 +28,8 @@ struct InsightsView: View {
     /// Any date inside the period being shown.
     @State private var anchor: Date = .now
     @State private var showsDailyList = false
+    /// Created on appear, once the environment's engine is available.
+    @State private var summary: WeeklySummaryCoordinator?
 
     private let calendar = Calendar.current
     private var weeks: WeekCalendar { WeekCalendar(calendar: calendar) }
@@ -56,6 +60,10 @@ struct InsightsView: View {
                 .accessibilityIdentifier("insightsSpan")
 
                 periodHeader
+
+                if span == .week, let summary {
+                    WeeklySummaryCard(state: summary.state, needsSupport: summary.needsSupport)
+                }
 
                 card(title: String(localized: "Moods")) {
                     if stats.entryCount == 0 {
@@ -99,6 +107,22 @@ struct InsightsView: View {
         .navigationTitle("Insights")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: span) { anchor = .now }
+        .onAppear {
+            if summary == nil { summary = WeeklySummaryCoordinator(engine: summaryEngine) }
+        }
+        // Re-checks whenever the week or anything in it changes; reuses the
+        // saved summary when it still matches.
+        .task(id: summaryKey) {
+            guard span == .week else { return }
+            if summary == nil { summary = WeeklySummaryCoordinator(engine: summaryEngine) }
+            summary?.refresh(week: period, entries: entries, context: modelContext, calendar: calendar)
+        }
+    }
+
+    private var summaryKey: String {
+        guard span == .week else { return "month" }
+        return WeekSnapshot(week: period, journal: entries, calendar: calendar).fingerprint
+            + "\(period.start.timeIntervalSinceReferenceDate)"
     }
 
     // MARK: - Pieces
@@ -165,10 +189,7 @@ struct InsightsView: View {
 }
 
 #Preview {
-    let container = try! ModelContainer(
-        for: JournalEntry.self,
-        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-    )
+    let container = try! ModelContainer.journal(inMemory: true)
     let moods: [Mood?] = [.calm, .anxious, nil, .joyful, .sad, .content, .calm, .frustrated, .overwhelmed, .neutral]
     for (offset, mood) in moods.enumerated() {
         let entry = JournalEntry(createdAt: .now.addingTimeInterval(Double(-offset) * 86_400), text: "Entry \(offset)")

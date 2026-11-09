@@ -148,6 +148,8 @@ struct JournalListView: View {
         withAnimation {
             entry.deletedAt = .now
         }
+        // The week's summary may describe this entry.
+        WeeklySummary.discard(weekContaining: entry.createdAt, in: modelContext)
     }
 }
 

@@ -109,12 +109,16 @@ struct RecycleBinView: View {
 
     private func restore(_ entry: JournalEntry) {
         withAnimation { entry.deletedAt = nil }
+        WeeklySummary.discard(weekContaining: entry.createdAt, in: modelContext)
     }
 
     private func permanentlyDelete(_ entries: [JournalEntry], reason: String) async {
         guard await appLock.authenticate(reason: reason) else {
             authFailed = true
             return
+        }
+        for entry in entries {
+            WeeklySummary.discard(weekContaining: entry.createdAt, in: modelContext)
         }
         withAnimation {
             entries.forEach(modelContext.delete)

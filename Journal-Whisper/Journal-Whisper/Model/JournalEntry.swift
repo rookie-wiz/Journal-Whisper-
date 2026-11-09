@@ -28,6 +28,13 @@ final class JournalEntry {
     /// re-analysing text that hasn't changed.
     var moodAnalyzedAt: Date?
 
+    /// A one-line, model-written note about this entry, used to build weekly
+    /// summaries when the whole week won't fit in one request. Derived data:
+    /// deleted with the entry, and ignored once the entry changes.
+    var gist: String?
+    /// The `updatedAt` the gist was written from; a newer `updatedAt` makes it stale.
+    var gistSourceUpdatedAt: Date?
+
     /// How long entries stay in Recently Deleted before being purged.
     static let retentionDays = 30
 
@@ -76,6 +83,9 @@ final class JournalEntry {
             }
         )
         guard let expired = try? context.fetch(descriptor), !expired.isEmpty else { return }
+        for entry in expired {
+            WeeklySummary.discard(weekContaining: entry.createdAt, in: context)
+        }
         expired.forEach(context.delete)
         try? context.save()
     }
