@@ -4,6 +4,7 @@
 //
 //  Debug-only helpers for UI tests: seed sample data into an in-memory store.
 //  Launch with `-uiTesting -seedActive N -seedDeleted N` (and optionally `-logToFile`).
+//  `-seedWeek` adds a fixed run of mood-tagged entries for the Insights screen.
 //
 
 #if DEBUG
@@ -41,7 +42,31 @@ enum DebugSeed {
             entry.deletedAt = .now.addingTimeInterval(Double(-(i % 29)) * 86_400)
             context.insert(entry)
         }
+        if ProcessInfo.processInfo.arguments.contains("-seedWeek") {
+            seedWeek(into: context)
+        }
         try? context.save()
+    }
+
+    /// Entries written today and the two days before (current streak 3), a gap,
+    /// then five consecutive days (longest streak 5). Today has two entries, one
+    /// without a mood.
+    static let seededWeek: [(daysAgo: Int, mood: Mood?)] = [
+        (0, .calm), (0, nil), (1, .anxious), (2, .joyful),
+        (4, .sad), (5, .content), (6, .calm), (7, .frustrated), (8, .overwhelmed),
+    ]
+
+    private static func seedWeek(into context: ModelContext) {
+        let calendar = Calendar.current
+        let noon = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: .now) ?? .now
+        for (index, item) in seededWeek.enumerated() {
+            // Today's entries go in the morning so they're never in the future.
+            let day = calendar.date(byAdding: .day, value: -item.daysAgo, to: noon) ?? noon
+            let date = item.daysAgo == 0 ? calendar.startOfDay(for: .now).addingTimeInterval(Double(index + 1) * 60) : day
+            let entry = JournalEntry(createdAt: date, title: "Day \(item.daysAgo)", text: "Seeded entry \(index).")
+            if let mood = item.mood { entry.setUserMood(mood) }
+            context.insert(entry)
+        }
     }
 }
 #endif

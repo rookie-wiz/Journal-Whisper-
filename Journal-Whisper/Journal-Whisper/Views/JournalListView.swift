@@ -19,6 +19,7 @@ struct JournalListView: View {
     private enum Route: Hashable {
         case entry(JournalEntry)
         case recycleBin
+        case insights
     }
 
     @State private var path: [Route] = []
@@ -67,6 +68,8 @@ struct JournalListView: View {
                     )
                 case .recycleBin:
                     RecycleBinView()
+                case .insights:
+                    InsightsView()
                 }
             }
             .confirmationDialog(
@@ -109,6 +112,11 @@ struct JournalListView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Lock", systemImage: "lock") {
                         appLock.lock()
+                    }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Insights", systemImage: "chart.bar.xaxis") {
+                        path.append(.insights)
                     }
                 }
                 ToolbarItem(placement: .secondaryAction) {
